@@ -14,6 +14,7 @@
   :ring {:handler hello-world.handler/app
          :nrepl {:start? true
                  :port 9998}}
+  :jvm-opts ["-Xms256m" "-Xmx256m" "-server"]
   :profiles
   {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
                         [ring/ring-mock "0.3.0"]
