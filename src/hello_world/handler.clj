@@ -37,16 +37,33 @@
     (log-json user)
     (if user
       (response user)
-      (route/not-found "Not found"))))
+      (route/not-found (response {:message "Not found"})))))
+
+(defn duration
+  "Returns duration in seconds. Input params should be System/nanoTime"
+  [start]
+  (float (/ (- (System/nanoTime) start) 1000000)))
+
+(defn wrap-response-time
+  "Logs duration of response time"
+  [handler]
+  (fn [request]
+    (let [start (System/nanoTime)
+          response (handler request)]
+      (log-json {:message "response time"
+                 :url (:uri request)
+                 :response-time-sec (duration start)})
+      response)))
 
 (defroutes handler
   (GET "/health" [] (health))
   (GET "/users" {params :params} (get-users))
   (GET "/users/:id" {{id :id} :params} (get-user id))
-  (route/not-found "Not Found"))
+  (route/not-found (response {:message "Not Found"})))
 
 (def app
   (-> handler
+      wrap-response-time
       wrap-params
       wrap-json-body
       wrap-json-response))
