@@ -16,8 +16,5 @@
                  :port 9998}}
   :jvm-opts ["-Xms256m" "-Xmx256m" "-server"]
   :profiles
-  {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
-                        [ring/ring-mock "0.3.0"]
-                        [org.clojure/tools.trace "0.7.9"]]}
-   :user {:plugins [[cider/cider-nrepl "0.11.0-SNAPSHOT"]]}
+  {:dev {:dependencies [[ring/ring-mock "0.3.0"]]}
    :repl {:plugins [[cider/cider-nrepl "0.11.0-SNAPSHOT"]]}})
