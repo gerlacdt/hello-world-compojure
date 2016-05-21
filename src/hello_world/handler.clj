@@ -5,21 +5,43 @@
             [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
             [ring.middleware.params :refer [wrap-params]]
             [ring.util.response :refer [response]]
-            [cheshire.core :refer :all]))
+            [cheshire.core :refer :all]
+            [io.aviso.exception :as aviso-ex]
+            [taoensso.timbre :as timbre
+             :refer (log  trace  debug  info  warn  error  fatal  report
+                          logf tracef debugf infof warnf errorf fatalf reportf
+                          spy get-env log-env)]))
 
+(defn json-output-fn
+  [{:keys [?err_ vargs_ hostname_ timestamp_ level] :as args}]
+  (let [messages (map (fn [msg] { :timestamp @timestamp_
+                                 :level     level
+                                 :hostname  @hostname_
+                                 :message   msg })
+                      @vargs_)
+        err (force ?err_)
+        json-messages (map #(generate-string %) messages)]
+    ;; (print "print default-fn-output" err)
+    (if err
+      (clojure.string/join "\n" (conj json-messages {:ex (aviso-ex/format-exception err)}))
+      (clojure.string/join "\n" (conj json-messages)))))
+
+;; (error (Exception. "my exception message") "text message")
+
+;; (timbre/merge-config!
+;;  {:appenders {:println {:output-fn json-output-fn}}})
+
+(timbre/merge-config!
+ {:appenders {:println {:output-fn timbre/default-output-fn}}})
 
 (def users [{:id "1" :firstname "foo" :lastname "bar"}
-            {:id "2" :firstname "john" :lastname "doe"}])
-
-(defn log-json
-  "Logs given clojure map in json"
-  [data]
-  (println (generate-string data)))
+            {:id "2" :firstname "john" :lastname "doe"}
+            {:id "3" :firstname "daniel" :lastname "gerlach"}])
 
 (defn health
   "Returns ring response health check"
   []
-  (log-json {:message "health check OK"})
+  (info "health check OK")
   (response {:status "OK"}))
 
 (defn get-users
@@ -34,7 +56,7 @@
                               (when (= (:id user) id)
                                 user))
                             users))]
-    (log-json user)
+    (info user)
     (if user
       (response user)
       (route/not-found (response {:message "Not found"})))))
@@ -50,9 +72,9 @@
   (fn [request]
     (let [start (System/nanoTime)
           response (handler request)]
-      (log-json {:message "response time"
-                 :url (:uri request)
-                 :response-time-sec (duration start)})
+      (info {:message "response time"
+             :url (:uri request)
+             :response-time-sec (duration start)})
       response)))
 
 (defroutes handler
